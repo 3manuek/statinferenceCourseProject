@@ -58,6 +58,7 @@ For the current scenario, we must consider the following as the theorical mean o
 
 $$ \frac{1}{\lambda} = \frac{1}{0.2} = 5 $$
 
+
 The sample mean can be calculated using:
 
 ```{r, echo=TRUE}
@@ -104,6 +105,10 @@ abline(h = meanCumVars, col = "red" )
 
 ### Show that the distribution is approximately normal
 
+The graph bellow shows a bell courve as a result of the normal distribution function using the mean of all the sample means and the standard deviation by result of the following formula:
+
+$$ \sqrt{var(X)}$$
+
 ```{r, message=TRUE, echo=TRUE}
 
 m<-mean(mns)
@@ -116,9 +121,16 @@ curve(dnorm(x, mean=m, sd=std),
           col="darkblue", lwd=2, add=TRUE, yaxt="n")
 abline(v = 5, col="red")
 abline(v = distMean, col = "green")    
+
+legend("topright", pch = c(3,3) , 
+        col = c("green", "red"), 
+        legend = c("Sample Mean", "Theorical Mean"))
+
 ```
 
-> TODO: Add labels
+
+## Part B
+
 
 
 
