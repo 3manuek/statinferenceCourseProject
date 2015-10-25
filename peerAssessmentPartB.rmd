@@ -1,0 +1,143 @@
+---
+title: "The Effect of Vitamin C on Tooth Growth in Guinea Pigs"
+author: "Emanuel Calvo"
+date: "October 25, 2015"
+output: pdf_document
+---
+
+## Assessment details
+
+Now in the second portion of the project, we're going to analyze the ToothGrowth data in the R datasets package.
+
+- Load the ToothGrowth data and perform some basic exploratory data analyses
+- Provide a basic summary of the data.
+- Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. (Only use the techniques from class, even if there's other approaches worth considering)
+- State your conclusions and the assumptions needed for your conclusions.
+
+
+## Overview
+
+The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).
+
+The data consists of measurements of the mean size of the odontoblast cells harvested from the incisor teeth of a population of *60* guinea pigs. The subjects were divided into 6 groups of 10 , fed with a diet of 6 Vitamin-C regimes and in a period of 42 days. The Vitamin C was administered either in the form of Orange Juice (OJ) or synthetic Vitamin C (VC) in aqueous solution.
+
+Data definition:
+
+len: length in microns 
+supp: The Vitamin C was administered either in the form of Orange Juice (OJ) or synthetic acid ascorbic (VC) in aqueous solution (pure Vitamin C).
+dose: in milligrams per day (mg/day).
+
+> "Measurements   are  made  under  440 magnification   by  means of  an  ocular  micrometer   and  the  readings   are   subsequently converted to microns. "
+
+The data consists of measurements of the mean size of the odontoblast cells harvested from the incisor teeth of a population of 60 guinea pigs. These animals were divided into 6 groups of 10 and consistently fed a diet with one of 6 Vitamin C supplement regimes for a period of 42 days. 
+ 
+
+For the full reference of the study, you can check [the Journal of Nutrition.](http://jn.nutrition.org/content/33/5/491.full.pdf)
+
+
+Details of the Tooth Growth dataset can be found [here.](http://www.inside-r.org/r-doc/datasets/ToothGrowth)
+
+```{r, echo=TRUE, message=FALSE}
+require(graphics)
+require(datasets)
+require(dplyr)
+require(ggplot2)
+data(ToothGrowth)
+```
+There are `r nrow(ToothGrowth)` entries on the ToothGrowth dataset, with the following summary:
+
+```{r}
+str(ToothGrowth)
+summarise(group_by(ToothGrowth,dose), mean(len) )
+```
+
+The summary shown above, matches perfectly with the corresponding data definition. From the documentation, is possible to identify that OJ stands for **Orance Juice** and VC as **synthetic acid ascorbic**. The `dose` is represented by mg/day dose.
+
+Unpaired samples and these variances are not equal, from 60 Guinea Pigs in groups of 30 separated by supplement. As a premise, we can consider all the subject equal in weight, age and feeding (at least in the mean).
+
+
+
+A generic overview of the data:
+
+```{r}
+coplot(len ~ dose | supp, data = ToothGrowth, panel = panel.smooth,
+       xlab = "ToothGrowth data: length vs dose, given type of supplement")
+```
+
+From the graph above, is possible to see an increase of length derived from larger dosis of `Vitamin C`. Also, we could check this in the previous summarization, in which shows the length means per dose.
+
+For better presentation of the data, we covered the data using boxplots.
+
+
+```{r}
+# vc <- ToothGrowth[ToothGrowth$supp == "VC",] aes(x=factor(dose ~ supp)
+boxPlotAll <- ggplot(ToothGrowth, aes(x=factor(dose),y=len,col=factor(supp),fill=factor(dose))) +
+    geom_boxplot() +
+    scale_x_discrete("Dose (mg) - Supplement") +   
+    scale_y_continuous("Tooth Length in Microns μ") +  
+    ggtitle("Tooth Length by Dosage and Supplement of Vitamin C")
+boxPlotAll
+```
+
+
+## Considerations
+
+We use the `t.test` function to perform a Student's test using the defaults (95% confidence level and equal variances).
+
+The null hypothesis (H0) is considered when the means of the two groups being tested are equal, otherwise the alternative hypothesis is that the observed difference in tooth lengths is statistically significant.
+
+The `H0` will be rejected when a p-value is less than 0.05.
+
+
+## T-Values by supplement 
+
+Now we'll test the effect of dosages on tooth length by supplement:
+
+```{r}
+TG_0 <- filter(ToothGrowth, dose==0.5)
+TG_1 <- filter(ToothGrowth, dose==1.0)
+TG_2 <- filter(ToothGrowth, dose==2.0)
+
+T_0 <- t.test(len ~ supp, paired = FALSE, var.equal = FALSE, data = TG_0)
+T_1 <- t.test(len ~ supp, paired = FALSE, var.equal = FALSE, data = TG_1)
+T_2 <- t.test(len ~ supp, paired = FALSE, var.equal = FALSE, data = TG_2)
+```
+
+
+### p.values per dose
+
+```{r}
+
+pV0 <- T_0$p.value  ## 0.5 
+pV1 <- T_1$p.value  ## 1.0 
+pV2 <- T_2$p.value  ## 2.0 
+
+pThreshold = 0.05
+
+Ci0 <- T_0[['conf.int']][1:2]
+Ci1 <- T_1[['conf.int']][1:2]
+Ci2 <- T_2[['conf.int']][1:2]
+
+```
+
+Having such calculations, we may calculate whether or not the H0 is rejected:
+
+- Dose 0.5: p-value = `r pV0`. We observe that the value is bellow the 5% (0.05). The confidence interval does not includes zero (`r Ci0`). REJECTED
+- Dose 1.0: p-value = `r pV1`. We observe that the value is bellow the 5% (0.05). The confidence interval does not includes zero (`r Ci1`). REJECTED
+- Dose 2.0: p-value = `r pV2`. The value is far above the 5%, we conclude here that there is not significant difference between treatments (the length mean difference is `r T_2$estimate[[2]] - T_2$estimate[[1]]` microns. The confidence interval includes zero (`r Ci2`). NOT REJECTED
+
+
+
+## Conclusions
+
+- Using the exploratory analysis, we were able to point the research considering that the dosage quantity affects the teeth length. 
+- There is a significant difference between regimes (OJ and VC) with lower dosages (0.5 and 1.0). However, the difference is almost vanished for larger dosages (2.0).
+- Also, when comparing regimes by supplement on lower doses (0.5 and 1.0) we can see that the confidence interval does not include zero. This, in conjuntion with the p-values, confirms the significant diference between regimes.
+
+
+## Thanks
+
+In honour of those Guinea pigs who participated in the experiment.
+"At the conclusion  of its  42-day feeding  period  each animal  is
+sacrificed by chloroform." 
+Reference: http://jn.nutrition.org/content/33/5/491.full.pdf
